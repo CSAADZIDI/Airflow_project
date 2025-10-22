@@ -109,5 +109,3 @@ start_flask_API = PythonOperator(
 
 start_flask_API
 
-if __name__ == "__main__":
-    start_flask_API.cli()

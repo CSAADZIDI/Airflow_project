@@ -1,4 +1,4 @@
-# Orchestration d’un Pipeline ML avec Airflow
+# **Orchestration d’un Pipeline ML avec Airflow**
 
 
 Ce projet illustre l’orchestration d’un pipeline de Machine Learning avec Apache Airflow.
@@ -58,7 +58,7 @@ airflow_project
         └── requirements.txt
 
 ## Installation et configuration
-1. Prérequis
+### 1. Prérequis
 
 Python 
 
@@ -68,11 +68,11 @@ Flask
 
 Scikit-learn
 
-2. Installation des dépendances dans un environnement virtuel
+### 2. Installation des dépendances dans un environnement virtuel
 
 pip install -r requirements.txt
 
-3. Initialisation d’Airflow
+### 3. Initialisation d’Airflow
 
 export AIRFLOW_HOME=~/airflow_project/airflow
 
@@ -82,17 +82,17 @@ airflow standalone
 L’interface Airflow est accessible sur http://localhost:8080
 
 
-4. Définition du DAG principal (dags/main.py) 
+### 4. Définition du DAG principal (dags/main.py) 
 
 C'est l’instance principale du workflow ML.
 Il inclut plusieurs opérateurs, fonctions et paramètres :
-> notify_success(context) et notify_failure(context)
+#### notify_success(context) et notify_failure(context)
 
 Ces fonctions définissent les notifications e-mail en cas de succès ou d’échec des tâches.
 Elles utilisent l’EmailOperator pour envoyer un message prédéfini (sujet + contenu) au destinataire.
 
 
-> send_email — EmailOperator
+#### send_email — EmailOperator
 
 Cette tâche envoie un e-mail de notification à la fin du pipeline.
 Elle utilise deux fonctions callback :
@@ -103,7 +103,7 @@ notify_failure — appelée en cas d’échec du DAG
 
 Ces fonctions assurent la supervision du pipeline via des alertes automatiques.
 
-> PythonOperator — Tâches du pipeline ML
+#### PythonOperator — Tâches du pipeline ML
 
 Ces opérateurs exécutent les fonctions Python issues du script ML et orchestrent les différentes étapes du pipeline :
 
@@ -114,7 +114,7 @@ separate_data_outputs |	separate_data_outputs()	|Séparation train/test
 build_model	|build_model()	|Entraînement du modèle
 load_model	|load_model()	|Chargement du modèle entraîné
 
-> TriggerDagRunOperator
+#### TriggerDagRunOperator
 
 Cette tâche déclenche automatiquement le DAG Airflow_project_Flask lorsque le pipeline ML se termine avec succès.
 Elle permet de lancer l’API Flask afin d’afficher l’état du dernier run.
@@ -123,12 +123,12 @@ Ces tâches sont exécutées dans l’ordre suivant :
 load_data → data_preprocessing → separate_data_outputs → build_model → load_model → send_email
 
 
-4. Définition du DAG secondaire (dags/Flask_API.py)
+### 5. Définition du DAG secondaire (dags/Flask_API.py)
 
 Ce DAG gère la mise en route et la supervision de l’API Flask.
 Il interagit directement avec le statut du DAG principal et inclut plusieurs fonctions:
 
-> check_dag_status()
+#### check_dag_status()
 
 Cette fonction interroge le statut du dernier run du DAG principal.
 Elle retourne :
@@ -137,7 +137,7 @@ True → si le run est réussi
 
 False → sinon
 
-> handle_api_request()
+#### handle_api_request()
 
 Gère les requêtes API et redirige vers :
 
@@ -147,7 +147,7 @@ Gère les requêtes API et redirige vers :
 
 Ces routes sont affichées via des templates HTML (success.html et failure.html).
 
-> start_flask_app()
+#### start_flask_app()
 
 Démarre le serveur Flask et expose les routes API :
 
@@ -159,13 +159,12 @@ Démarre le serveur Flask et expose les routes API :
 
 /health: code de requête  
 
-
-> start_flask_API — PythonOperator
+#### start_flask_API — PythonOperator
 
 Cette tâche lance le serveur Flask en exécutant start_flask_app().
 Elle représente le point d’entrée du cycle de vie de l’API.
 
-## Notifications
+### Notifications
 
 Configurer les variables SMTP dans le fichier airflow.cfg :
 

@@ -28,19 +28,33 @@ Relier Airflow à une mini-API Flask pour la supervision du workflow
 ## Structure du projet
 
 airflow_project
+
         ├── airflow_venv
+        
         ├── airflow
+        
         ├── dags
+        
         │   ├── data
+        
         │   │   └── advertising.csv
+        
         │   ├── model
+        
         │   ├── src
+        
         │   │   └── model_development.py
+        
         │   ├── templates
+        
         │   │   ├── failure.html
+        
         │   │   └── success.html
+        
         │   ├── Flask_API.py
+        
         │   └── main.py
+        
         └── requirements.txt
 
 ## Installation et configuration

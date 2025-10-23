@@ -1,104 +1,170 @@
-# Airflow Lab Instructions and Description
-
-## Introduction
-This document provides a detailed breakdown of the two DAGs (`Airflow_Lab2` and `Airflow_Lab2_Flask`) along with explanations of each function within the DAG files. These explanations aim to clarify the purpose and functionality of each task and function in the Airflow workflows.
+# Orchestration d’un Pipeline ML avec Airflow
 
 
-Watch the tutorial video for this lab at [Airflow Lab2 Tutorial Video](https://youtu.be/LwBFOyfN5TY)
+Ce projet illustre l’orchestration d’un pipeline de Machine Learning avec Apache Airflow.
+L’objectif principal est l’automatisation du workflow d’un modèle déjà existant, et non la conception du modèle lui-même.
 
-## Prerequisites
-Before proceeding with this lab, ensure the following prerequisites are met:
+Le script model_development.py contient un modèle de régression logistique appliqué au dataset advertising.csv.
+Ce script réalise les étapes suivantes :
 
-- Basic understanding of Apache Airflow concepts.
-- Apache Airflow installed and configured.
-- Necessary Python packages installed, including Flask.
+Chargement du dataset
+
+Prétraitement et séparation train/test
+
+Entraînement et sauvegarde du modèle dans le dossier /model/
+
+## Objectifs pédagogiques
+
+Comprendre la structure d’un DAG Airflow
+
+Orchestrer un pipeline ML complet
+
+Créer des tâches via différents opérateurs Airflow
+
+Gérer les dépendances et callbacks
+
+Relier Airflow à une mini-API Flask pour la supervision du workflow
+
+## Structure du projet
+
+airflow_project
+        ├── airflow_venv
+        ├── airflow
+        ├── dags
+        │   ├── data
+        │   │   └── advertising.csv
+        │   ├── model
+        │   ├── src
+        │   │   └── model_development.py
+        │   ├── templates
+        │   │   ├── failure.html
+        │   │   └── success.html
+        │   ├── Flask_API.py
+        │   └── main.py
+        └── requirements.txt
+
+## Installation et configuration
+1. Prérequis
+
+Python 
+
+Apache Airflow 
+
+Flask 
+
+Scikit-learn
+
+2. Installation des dépendances dans un environnement virtuel
+
+pip install -r requirements.txt
+
+3. Initialisation d’Airflow
+
+export AIRFLOW_HOME=~/airflow_project/airflow
+
+airflow standalone
 
 
-## Airflow Email Configuration
-
-### Sign in with app passwords
-Follow the instruction provided here: [link](https://support.google.com/accounts/answer/185833) and get your smtp password
-
-### Adding SMTP Information to airflow.cfg
-
-To configure Airflow to send emails, you need to add SMTP information to the `airflow.cfg` file. Follow these steps:
-
-1. Locate the `airflow.cfg` file in your Airflow installation directory.
-2. Open the file using a text editor.
-3. Search for the `[smtp]` section in the configuration file.
-4. Update the following parameters with your SMTP server information:
-   - `smtp_host`: Hostname of the SMTP server.
-   - `smtp_starttls`: Set it to `True` if your SMTP server uses TLS.
-   - `smtp_ssl`: Set it to `True` if your SMTP server uses SSL.
-   - `smtp_user`: Your SMTP username.
-   - `smtp_password`: Your SMTP password.
-   - `smtp_port`: Port number of the SMTP server (e.g., 587 for TLS, 465 for SSL).
-5. Save the changes to the `airflow.cfg` file.
-
-for our lab assuming you have a gmail account you can use the following setting:
-   - smtp_host = smtp.gmail.com
-   - smtp_starttls = True
-   - smtp_ssl = False
-   - smtp_user = YOUREMAIL@gmail.com
-   - smtp_password = Enter your password generated above
-   - smtp_port = 587
-   - smtp_mail_from = YOUREMAIL@gmail.com
-   - smtp_timeout = 30
-   - smtp_retry_limit = 5
-
-After updating the SMTP information, Airflow will use the configured SMTP server to send email notifications.
+L’interface Airflow est accessible sur http://localhost:8080
 
 
-## DAG Structure
+4. Définition du DAG principal (dags/main.py) 
 
-### `Airflow_Lab2`
-This DAG orchestrates a machine learning pipeline and notification system. Let's break down each function within this DAG:
+C'est l’instance principale du workflow ML.
+Il inclut plusieurs opérateurs, fonctions et paramètres :
+> notify_success(context) et notify_failure(context)
 
-1. **`notify_success(context)` and `notify_failure(context)` Functions:**
-   - These functions define email notifications for task success and failure, respectively. They utilize the `EmailOperator` to send emails with predefined content and subject to a specified recipient (in this case, `rey.mhmmd@gmail.com`).
+Ces fonctions définissent les notifications e-mail en cas de succès ou d’échec des tâches.
+Elles utilisent l’EmailOperator pour envoyer un message prédéfini (sujet + contenu) au destinataire.
 
-2. **`default_args` Dictionary:**
-   - This dictionary defines default arguments for the DAG, including the start date and the number of retries in case of task failure.
 
-3. **`dag` Definition:**
-   - This section creates the main DAG instance (`Airflow_Lab2`) with various parameters such as description, schedule interval, catchup behavior, and tags.
-   
-4. **`owner_task` BashOperator:**
-   - This task echoes `1` and is assigned to an owner (`Ramin Mohammadi`). It represents a simple demonstration task with a linked owner.
+> send_email — EmailOperator
 
-5. **`send_email` EmailOperator:**
-   - This task sends a notification email upon DAG completion. It utilizes the `notify_success` and `notify_failure` functions as callbacks for success and failure, respectively.
+Cette tâche envoie un e-mail de notification à la fin du pipeline.
+Elle utilise deux fonctions callback :
 
-6. **PythonOperator Tasks:**
-   - These tasks execute Python functions (`load_data`, `data_preprocessing`, `separate_data_outputs`, `build_model`, `load_model`) representing different stages of a machine learning pipeline. They perform data loading, preprocessing, model building, and model loading tasks.
+notify_success — appelée en cas de succès du DAG
 
-7. **`TriggerDagRunOperator` Task:**
-   - This task triggers the `Airflow_Lab2_Flask` DAG upon successful completion of the main DAG. It ensures that the Flask API is launched after the machine learning pipeline completes successfully.
+notify_failure — appelée en cas d’échec du DAG
 
-### `Airflow_Lab2_Flask`
-This DAG manages the Flask API's lifecycle and consists of the following function:
+Ces fonctions assurent la supervision du pipeline via des alertes automatiques.
 
-1. **`check_dag_status()` Function:**
-   - This function queries the status of the last DAG run (`Airflow_Lab2`). It returns `True` if the DAG run was successful, and `False` otherwise.
+> PythonOperator — Tâches du pipeline ML
 
-2. **`handle_api_request()` Function:**
-   - This function handles API requests and redirects users to `/success` or `/failure` routes based on the status of the last DAG run.
+Ces opérateurs exécutent les fonctions Python issues du script ML et orchestrent les différentes étapes du pipeline :
 
-3. **Flask Routes and HTML Templates:**
-   - The Flask routes (`/api`, `/success`, `/failure`) define endpoints for accessing the API and displaying success or failure pages. These routes render HTML templates (`success.html`, `failure.html`) with appropriate messages.
+Tâche	| Fonction exécutée  |	Description
+load_data	|load_data()	|Chargement des données
+data_preprocessing|	data_preprocessing()	|Nettoyage et transformation
+separate_data_outputs |	separate_data_outputs()	|Séparation train/test
+build_model	|build_model()	|Entraînement du modèle
+load_model	|load_model()	|Chargement du modèle entraîné
 
-4. **`start_flask_app()` Function:**
-   - This function starts the Flask server, enabling users to access the API endpoints.
+> TriggerDagRunOperator
 
-5. **`start_flask_API` PythonOperator:**
-   - This task executes the `start_flask_app()` function to initiate the Flask server. It represents the starting point for the Flask API's lifecycle.
+Cette tâche déclenche automatiquement le DAG Airflow_project_Flask lorsque le pipeline ML se termine avec succès.
+Elle permet de lancer l’API Flask afin d’afficher l’état du dernier run.
+Ces tâches sont exécutées dans l’ordre suivant :
 
-## Conclusion
-In this project, we've constructed a robust workflow using Apache Airflow to orchestrate a machine learning pipeline and manage a Flask API for monitoring purposes. The Airflow_Lab2 DAG coordinates various tasks, including data loading, preprocessing, model building, and email notification upon completion. By leveraging PythonOperators and BashOperator, we've encapsulated each step of the machine learning process, allowing for easy scalability and maintenance.
+load_data → data_preprocessing → separate_data_outputs → build_model → load_model → send_email
 
-Additionally, the integration of email notifications enhances the workflow's visibility, providing stakeholders with timely updates on task success or failure. This ensures proactive monitoring and quick response to any issues that may arise during pipeline execution.
 
-Furthermore, the Airflow_Lab2_Flask DAG facilitates the management of a Flask API, enabling users to access endpoints for checking the status of the machine learning pipeline. By querying the last DAG run status, the API delivers real-time feedback, empowering users to make informed decisions based on the pipeline's performance.
+4. Définition du DAG secondaire (dags/Flask_API.py)
 
-Overall, this project demonstrates the power of Apache Airflow in orchestrating complex workflows and integrating external systems seamlessly. By following the provided instructions and understanding the workflow's structure, users can leverage Airflow to streamline their machine learning pipelines and enhance operational efficiency.
+Ce DAG gère la mise en route et la supervision de l’API Flask.
+Il interagit directement avec le statut du DAG principal et inclut plusieurs fonctions:
 
+> check_dag_status()
+
+Cette fonction interroge le statut du dernier run du DAG principal.
+Elle retourne :
+
+True → si le run est réussi
+
+False → sinon
+
+> handle_api_request()
+
+Gère les requêtes API et redirige vers :
+
+/success → si le pipeline a réussi
+
+/failure → en cas d’échec
+
+Ces routes sont affichées via des templates HTML (success.html et failure.html).
+
+> start_flask_app()
+
+Démarre le serveur Flask et expose les routes API :
+
+/api : point d’accès principal
+
+/success : page de succès
+
+/failure : page d’erreur
+
+/health: code de requête  
+
+
+> start_flask_API — PythonOperator
+
+Cette tâche lance le serveur Flask en exécutant start_flask_app().
+Elle représente le point d’entrée du cycle de vie de l’API.
+
+## Notifications
+
+Configurer les variables SMTP dans le fichier airflow.cfg :
+
+smtp_user = "example@gmail.com"
+smtp_password = "password"
+smtp_host = "smtp.gmail.com"
+smtp_port = 587
+
+
+Activer l’option email_on_failure=True pour recevoir des alertes en cas de problème dans le dictionnaire default_args qui contient les paramètres par défaut du DAG principal, notamment :
+
+La date de début (start_date)
+
+Le nombre de tentatives (retries) en cas d’échec
+
+Les règles d’envoi d’e-mails (succès/échec)
